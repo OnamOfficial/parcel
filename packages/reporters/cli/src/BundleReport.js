@@ -48,7 +48,7 @@ export default function BundleReport(
     );
 
     let assets: Array<Asset> = [];
-    bundle.assetGraph.traverseAssets(asset => {
+    bundle.traverseAssets(asset => {
       assets.push(asset);
     });
     assets.sort((a, b) => b.stats.size - a.stats.size);

@@ -1,9 +1,11 @@
 // @flow
 
-import type {Bundle, ParcelOptions, Blob, FilePath} from '@parcel/types';
+import type {ParcelOptions, Blob, FilePath} from '@parcel/types';
+import type {Bundle as InternalBundle} from './types';
 import type Config from './Config';
 
 import {mkdirp, writeFile} from '@parcel/fs';
+import {Bundle} from './public/Bundle';
 import nullthrows from 'nullthrows';
 import path from 'path';
 import {report} from './ReporterRunner';
@@ -25,7 +27,7 @@ export default class PackagerRunner {
     this.distExists = new Set();
   }
 
-  async writeBundle(bundle: Bundle) {
+  async writeBundle(bundle: InternalBundle) {
     let start = Date.now();
     let contents = await this.package(bundle);
     contents = await this.optimize(bundle, contents);
@@ -44,18 +46,25 @@ export default class PackagerRunner {
     };
   }
 
-  async package(bundle: Bundle): Promise<Blob> {
+  async package(bundle: InternalBundle): Promise<Blob> {
     report({
       type: 'buildProgress',
       phase: 'packaging',
-      bundle
+      bundle: new Bundle(bundle)
     });
 
+    if (bundle.filePath == null) {
+      throw new Error(JSON.stringify(bundle));
+    }
     let packager = await this.config.getPackager(nullthrows(bundle.filePath));
-    return packager.package(bundle, this.options);
+    return packager.package(new Bundle(bundle), this.options);
   }
 
-  async optimize(bundle: Bundle, contents: Blob): Promise<Blob> {
+  async optimize(
+    internalBundle: InternalBundle,
+    contents: Blob
+  ): Promise<Blob> {
+    let bundle = new Bundle(internalBundle);
     let optimizers = await this.config.getOptimizers(
       nullthrows(bundle.filePath)
     );
